@@ -109,10 +109,17 @@ func (vd *VideoData) GetUrlSuffix() string {
 	return vd.NavigationEndpoint.CommandMetadata.WebCommandMetadata.Url
 }
 
-func (vd *VideoData) GetThumbnail() string {
+// Url constructs and returns the complete URL for the video using the base URL and the video URL suffix.
+func (vd *VideoData) GetUrl() string {
+	return baseURL + vd.NavigationEndpoint.CommandMetadata.WebCommandMetadata.Url
+}
+
+// GetThumbnail retrieves the first thumbnail URL from the list of thumbnails associated with the video.
+func (vd *VideoData) GetThumbnailUrl() string {
 	return vd.Thumbnail.Thumbnails[0].URL
 }
 
+// GetThumbnails retrieves the list of all thumbnail information for the video.
 func (vd *VideoData) GetThumbnails() []Thumbnails {
 	return vd.Thumbnail.Thumbnails
 }

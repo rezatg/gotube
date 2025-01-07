@@ -41,12 +41,14 @@ func main() {
 
     // Output specific information about the first video from the search results
     fmt.Println(results[0].ID)
-    fmt.Println(results[0].GetTitle())
-    fmt.Println(results[0].GetThumbnail())
-    fmt.Println(results[0].GetChannel())
-    fmt.Println(results[0].GetDuration())
-    fmt.Println(results[0].GetViews())
-    fmt.Println(results[0].GetUrlSuffix())
+	fmt.Println(results[0].GetTitle())
+	fmt.Println(results[0].GetThumbnailUrl())
+	fmt.Println(results[0].GetThumbnails())
+	fmt.Println(results[0].GetChannel())
+	fmt.Println(results[0].GetDuration())
+	fmt.Println(results[0].GetViews())
+	fmt.Println(results[0].GetUrlSuffix())
+	fmt.Println(results[0].GetUrl())
     fmt.Println(results[0].GetPublishTime())
 }
 ```

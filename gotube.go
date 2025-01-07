@@ -46,7 +46,6 @@ func Search(opt *OptionsSearch) ([]VideoData, error) {
 	}
 
 	results, err := ParseHtml(string(resp.Body()), opt.Limit)
-	// results[0].get
 	return results, err
 }
 

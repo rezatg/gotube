@@ -18,7 +18,7 @@ func readMockJsonFile(filename string) string {
 
 func TestParseHtml(t *testing.T) {
 	// Test case 1: Valid JSON data
-	jsonData := readMockJsonFile("test.txt")
+	jsonData := readMockJsonFile("result.txt")
 	results, err := gotube.ParseHtml(jsonData, 1)
 
 	assert.NoError(t, err)
