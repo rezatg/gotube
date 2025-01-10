@@ -29,34 +29,34 @@ go get github.com/rezatg/gotube
 package main
 
 import (
-    "fmt"
-    "github.com/rezatg/gotube"
+   "fmt"
+   "github.com/rezatg/gotube"
 )
 
 func main() {
-    // Create a new GoTube instance.
-    youtube := gotube.NewGoTube()
+   // Create a new GoTube instance.
+   youtube := gotube.NewGoTube()
 
-    // Perform a YouTube search with the search term "Ali Sorena, Negar" and limit the max-results to 1
-    results, _ := gotube.Search(&gotube.SearchOptions{
-        SearchTerms: "Ali Sorena, Negar",
-        Limit: 1,
-    })
+   // Perform a YouTube search with the search term "Ali Sorena, Negar" and limit the max-results to 1
+   results, _ := gotube.Search(&gotube.SearchOptions{
+      SearchTerms: "Ali Sorena, Negar",
+      Limit: 1,
+   })
 
-    // Print details for the first result.
-	videoInfo := result[0]
-	fmt.Printf("ID: %s\nTitle: %s\nThumbnail URL: %s\nThumbnails: %v\nChannel: %s\nDuration: %s\nViews: %s\nURL Suffix: %s\nURL: %s\nPublish Time: %s\n",
-		videoInfo.ID,
-		videoInfo.GetTitle(),
-		videoInfo.GetUrlThumbnail(),
-		videoInfo.GetThumbnails(),
-		videoInfo.GetChannel(),
-		videoInfo.GetDuration(),
-		videoInfo.GetViews(),
-		videoInfo.GetUrlSuffix(),
-		videoInfo.GetUrl(),
-		videoInfo.GetPublishTime(),
-	)
+   // Print details for the first result.
+   videoInfo := result[0]
+   fmt.Printf("ID: %s\nTitle: %s\nThumbnail URL: %s\nThumbnails: %v\nChannel: %s\nDuration: %s\nViews: %s\nURL Suffix: %s\nURL: %s\nPublish Time: %s\n",
+      videoInfo.ID,
+      videoInfo.GetTitle(),
+      videoInfo.GetUrlThumbnail(),
+      videoInfo.GetThumbnails(),
+      videoInfo.GetChannel(),
+      videoInfo.GetDuration(),
+      videoInfo.GetViews(),
+      videoInfo.GetUrlSuffix(),
+      videoInfo.GetUrl(),
+      videoInfo.GetPublishTime(),
+   )
 }
 ```
 
@@ -67,35 +67,33 @@ You can retrieve detailed information about a specific video using the GetInfoVi
 package main
 
 import (
-	"fmt"
-	"log"
+   "fmt"
+   "log"
 
-	"github.com/rezatg/gotube"
+   "github.com/rezatg/gotube"
 )
 
 func main() {
-	// Create a new GoTube instance.
-	youtube := gotube.NewGoTube()
+   // Create a new GoTube instance.
+   youtube := gotube.NewGoTube()
 
-	// Specify the YouTube video URL.  
-	videoURL := "https://youtu.be/1r8sEJTtwzE?si=jOvHjVawN-2cgQKi"
+   // Specify the YouTube video URL.  
+   videoURL := "https://youtu.be/1r8sEJTtwzE?si=jOvHjVawN-2cgQKi"
 
 
-	// Retrieve video information.
-	videoInfo, err := youtube.GetInfoVideo(videoURL)
-	if err != nil {
-		log.Fatalf("Error getting video info: %v", err)
-	}
+   // Retrieve video information.
+   videoInfo, err := youtube.GetInfoVideo(videoURL)
+   if err != nil {
+      log.Fatalf("Error getting video info: %v", err)
+   }
 
-	// Access and print the desired information.  See below for a full list of available fields.
-	fmt.Println("Video Title:", videoInfo.GetTitle())
-	fmt.Println("Channel:", videoInfo.GetChannel())
-	fmt.Println("Views:", videoInfo.GetViews())
-	fmt.Println("Description:", videoInfo.GetDescription())
-  // ... access other fields as needed
+   // Access and print the desired information.  See below for a full list of available fields.
+   fmt.Println("Video Title:", videoInfo.GetTitle())
+   fmt.Println("Channel:", videoInfo.GetChannel())
+   fmt.Println("Views:", videoInfo.GetViews())
+   fmt.Println("Description:", videoInfo.GetDescription())
+   // ... access other fields as needed
 }
-
-
 ```
 
 ## Available Fields **`(GetInfoVideo)`**:
