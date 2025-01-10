@@ -13,13 +13,8 @@ const (
 	maxRedirects int    = 5                     // Maximum number of allowed redirects.
 )
 
-var (
-	// Regular expression for extracting ytInitialData JSON from the HTML response.
-	ytInitialDataRegex *regexp.Regexp = regexp.MustCompile(`var ytInitialData\s*=\s*(\{.+?\});`)
-
-	// Regular expression to match YouTube video URLs. This is a relatively strict pattern. Consider refining it if needed.
-	youtubeURLRegex = regexp.MustCompile(`^((?:https?:)?\/\/)?((?:www|m)\.)?((?:youtube(-nocookie)?\.com|youtu.be))(\/(?:[\w\-]+\?v=|embed\/|v\/)?)([\w\-]+)(\S+)?$`)
-)
+// Regular expression to match YouTube video URLs. This is a relatively strict pattern. Consider refining it if needed.
+var youtubeURLRegex = regexp.MustCompile(`^(https?://)?(www\.)?(youtube\.com|youtu\.?be)/.+$`)
 
 // GoTube is a wrapper structure to manage default context and timeout for requests.
 type GoTube struct {
@@ -34,7 +29,7 @@ func NewGoTube() *GoTube {
 }
 
 // OptionsSearch defines the options for a YouTube search query.
-type OptionsSearch struct {
+type SearchOptions struct {
 	SearchTerms string // Search query string
 	Limit       int    // Maximum number of results to retrieve
 }
@@ -42,7 +37,7 @@ type OptionsSearch struct {
 // Search performs a YouTube search using the provided options.
 // It constructs the search URL, sends an HTTP GET request, and prints the raw response body.
 // Note: This function currently doesn't handle pagination or result parsing, it only retrieves the raw HTML.
-func (gt GoTube) Search(opt *OptionsSearch) ([]CompactVideoRenderer, error) {
+func (gt GoTube) Search(opt *SearchOptions) ([]CompactVideoRenderer, error) {
 	if opt.SearchTerms == "" {
 		return nil, fmt.Errorf("search terms cannot be empty")
 	}

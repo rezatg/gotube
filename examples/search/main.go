@@ -11,7 +11,7 @@ func main() {
 	youtube := gotube.NewGoTube()
 
 	// Search for videos with the specified search terms and limit the result to 1 video
-	result, err := youtube.Search(&gotube.OptionsSearch{
+	result, err := youtube.Search(&gotube.SearchOptions{
 		SearchTerms: "Ali Sorena, Negar",
 		Limit:       1,
 	})
