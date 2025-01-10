@@ -1,101 +1,98 @@
 package gotube
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/url"
-	"strings"
+	"regexp"
 
-	"github.com/isaacpd/costanza/pkg/util"
 	"github.com/valyala/fasthttp"
-	"github.com/valyala/fastjson"
 )
 
-// baseURL defines the base URL for YouTube searches.
-var baseURL string = "https://youtube.com"
+const (
+	baseURL      string = "https://youtube.com" // BaseURL defines the base URL for YouTube.
+	maxRedirects int    = 5                     // Maximum number of allowed redirects.
+)
 
-// optionsSearch represents the options for a YouTube search query.
-// SearchTerms: The search query string.
-// Limit: The maximum number of results to retrieve (currently not used in this implementation).
+var (
+	// Regular expression for extracting ytInitialData JSON from the HTML response.
+	ytInitialDataRegex *regexp.Regexp = regexp.MustCompile(`var ytInitialData\s*=\s*(\{.+?\});`)
+
+	// Regular expression to match YouTube video URLs. This is a relatively strict pattern. Consider refining it if needed.
+	youtubeURLRegex = regexp.MustCompile(`^((?:https?:)?\/\/)?((?:www|m)\.)?((?:youtube(-nocookie)?\.com|youtu.be))(\/(?:[\w\-]+\?v=|embed\/|v\/)?)([\w\-]+)(\S+)?$`)
+)
+
+// GoTube is a wrapper structure to manage default context and timeout for requests.
+type GoTube struct {
+	client *fasthttp.Client // HTTP client for sending requests.
+}
+
+// NewGoTube creates a new instance of GoTube with a default timeout.
+func NewGoTube() *GoTube {
+	return &GoTube{
+		client: &fasthttp.Client{},
+	}
+}
+
+// OptionsSearch defines the options for a YouTube search query.
 type OptionsSearch struct {
-	SearchTerms string
-	Limit       int
+	SearchTerms string // Search query string
+	Limit       int    // Maximum number of results to retrieve
 }
 
 // Search performs a YouTube search using the provided options.
 // It constructs the search URL, sends an HTTP GET request, and prints the raw response body.
 // Note: This function currently doesn't handle pagination or result parsing, it only retrieves the raw HTML.
-func Search(opt *OptionsSearch) ([]VideoData, error) {
-	encodedSearch := url.QueryEscape(opt.SearchTerms)                        // Encode the search terms for use in the URL.
-	url := fmt.Sprintf("%s/results?search_query=%s", baseURL, encodedSearch) // Construct the YouTube search URL.
-
-	req := fasthttp.AcquireRequest()   // Acquire a request object from the fasthttp pool. This helps to improve performance by reusing objects.
-	defer fasthttp.ReleaseRequest(req) // Release the request object back to the pool when finished. This is crucial for resource management.
-
-	req.SetRequestURI(url) // Set the request URI and method.
-	req.Header.SetMethod("GET")
-	req.Header.Add("Accept-Language", "en") // Add an Accept-Language header for better compatibility.
-
-	resp := fasthttp.AcquireResponse()   // Acquire a response object from the fasthttp pool. Similar to the request, this improves performance.
-	defer fasthttp.ReleaseResponse(resp) // Release the response object back to the pool when finished. Essential for efficient memory usage.
-
-	// Execute the HTTP request, handling redirects. The util.DoWithRedirects function is assumed to be defined elsewhere and handles redirects efficiently.
-	if err := util.DoWithRedirects(req, resp); err != nil {
-		fmt.Printf("Error getting youtube search results: %s", err)
-		return nil, err
+func (gt GoTube) Search(opt *OptionsSearch) ([]CompactVideoRenderer, error) {
+	if opt.SearchTerms == "" {
+		return nil, fmt.Errorf("search terms cannot be empty")
 	}
 
-	results, err := ParseHtml(string(resp.Body()), opt.Limit)
-	return results, err
-}
+	// Construct the YouTube search URL.
+	encodedSearch := url.QueryEscape(opt.SearchTerms)
+	url := fmt.Sprintf("%s/results?search_query=%s", baseURL, encodedSearch)
 
-// parseHtml parses the HTML response to extract video data.
-func ParseHtml(response string, limit int) ([]VideoData, error) {
-	// Find and extract ytInitialData JSON
-	var startIndex int = strings.Index(response, "ytInitialData")
-	if startIndex == -1 {
-		return nil, fmt.Errorf("ytInitialData not found")
-	}
-	startIndex += len("ytInitialData") + 3 // +3 for " = {"
-	endIndex := strings.Index(response[startIndex:], "};") + startIndex + 1
-	if endIndex == -1 {
-		return nil, fmt.Errorf("end of ytInitialData not found")
-	}
-
-	var ytInitialData struct {
-		Contents json.RawMessage `json:"contents"` // Holds the contents of ytInitialData
-	}
-
-	// Unmarshal the JSON data into ytInitialData structure
-	if err := json.Unmarshal([]byte(response[startIndex:endIndex]), &ytInitialData); err != nil {
-		return nil, fmt.Errorf("error unmarshalling ytInitialData: %w", err)
-	}
-
-	var p fastjson.Parser
-	v, err := p.ParseBytes(ytInitialData.Contents) // Parse the contents using fastjson
+	response, err := gt.sendRequest(url)
 	if err != nil {
 		return nil, err
 	}
 
-	var results = []VideoData{}
-	for _, contents := range v.GetArray("twoColumnSearchResultsRenderer", "primaryContents", "sectionListRenderer", "contents") {
-		for _, video := range contents.GetArray("itemSectionRenderer", "contents") {
-			if limit >= 1 && len(results) >= limit {
-				return results, nil
-			}
+	return ParseHtmlSearch(response, opt.Limit)
+}
 
-			// Check if videoRenderer exists
-			if video.Exists("videoRenderer") {
-				var videoData VideoData
-				// Unmarshal the videoRenderer object into VideoData structure
-				if err = json.Unmarshal([]byte(video.GetObject("videoRenderer").String()), &videoData); err != nil {
-					return nil, err
-				}
-				// Append the extracted VideoData to results
-				results = append(results, videoData)
-			}
-		}
+// GetInfoVideo retrieves video information from a given YouTube video URL.
+// It sends an HTTP GET request to the URL, parses the HTML response, and returns a VideoData struct containing the video's information.
+// Note: This function relies on the HTML structure of the YouTube video page. Changes to YouTube's HTML may break this function. Error handling is implemented for network requests, but not for parsing errors within ParseHtmlInfoVideo. Consider adding more robust error handling in the future.
+func (gt GoTube) GetInfoVideo(url string) (*VideoData, error) {
+	// Check if the URL matches the YouTube URL pattern using a regular expression.
+	if !youtubeURLRegex.MatchString(url) {
+		return nil, fmt.Errorf("invalid YouTube URL: %s", url)
 	}
 
-	return results, nil
+	response, err := gt.sendRequest(url)
+	if err != nil {
+		return nil, err
+	}
+
+	return ParseHtmlInfoVidoe(response)
+}
+
+// sendRequest sends an HTTP GET request and handles redirects.
+func (gt GoTube) sendRequest(url string) ([]byte, error) {
+	req := fasthttp.AcquireRequest()
+	defer fasthttp.ReleaseRequest(req)
+
+	req.SetRequestURI(url) // Set the request URI and method.
+	req.Header.SetMethod("GET")
+	req.Header.Add("Accept-Language", "en")
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36")
+
+	resp := fasthttp.AcquireResponse()
+	defer fasthttp.ReleaseResponse(resp)
+
+	// doWithRedirects handles HTTP redirects for a request.
+	if err := gt.client.DoRedirects(req, resp, maxRedirects); err != nil {
+		return nil, fmt.Errorf("error fetching URL (%s): %v", url, err)
+	}
+
+	return resp.Body(), nil
 }

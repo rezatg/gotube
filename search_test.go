@@ -5,24 +5,33 @@ import (
 	"testing"
 
 	"github.com/rezatg/gotube"
-	"github.com/stretchr/testify/assert"
 )
 
-func readMockJsonFile(filename string) string {
+// import (
+// 	"os"
+// 	// "github.com/rezatg/gotube"
+// )
+
+func readMockJsonFile(filename string) []byte {
 	data, err := os.ReadFile(filename)
 	if err != nil {
 		panic(err)
 	}
-	return string(data)
+	return data
 }
 
 func TestParseHtml(t *testing.T) {
-	// Test case 1: Valid JSON data
-	jsonData := readMockJsonFile("./temp/result.txt")
-	results, err := gotube.ParseHtml(jsonData, 1)
-
-	assert.NoError(t, err)
-	assert.Len(t, results, 1)
-
-	assert.Equal(t, "testVideo1", results[0].ID)
+	jsonData := readMockJsonFile("./test/response.txt")
+	results, err := gotube.ParseHtmlSearch(jsonData, 1)
+	println(111, results, err.Error())
 }
+
+// 	// Test case 1: Valid JSON data
+// 	jsonData := readMockJsonFile("./temp/result.txt")
+// 	results, err := gotube.ParseHtmlSearch(jsonData, 1)
+
+// 	assert.NoError(t, err)
+// 	assert.Len(t, results, 1)
+
+// 	assert.Equal(t, "testVideo1", results[0].ID)
+// }

@@ -1,7 +1,33 @@
 package gotube
 
-// VideoData represents the complete data for a single video.
+// VideoData holds detailed video information.
 type VideoData struct {
+	CompactVideoRenderer       CompactVideoRenderer       `json:"compactVideoRenderer"`
+	VideoPrimaryInfoRenderer   VideoPrimaryInfoRenderer   `json:"videoPrimaryInfoRenderer"`
+	VideoSecondaryInfoRenderer VideoSecondaryInfoRenderer `json:"videoSecondaryInfoRenderer"`
+}
+
+type VideoPrimaryInfoRenderer struct {
+	Title        Title        `json:"title"`
+	ViewCount    ViewCount    `json:"viewCount"`
+	VideoActions VideoActions `json:"videoActions"`
+	DateText     struct {
+		SimpleText string `json:"simpleText"`
+	} `json:"dateText"`
+	RelativeDateText struct {
+		SimpleText string `json:"simpleText"`
+	} `json:"relativeDateText"`
+}
+
+type VideoSecondaryInfoRenderer struct {
+	Owner                 Owner `json:"owner"`
+	AttributedDescription struct {
+		Content string `json:"content"`
+	} `json:"attributedDescription"`
+}
+
+// CompactVideoRenderer contains summary information for a video.
+type CompactVideoRenderer struct {
 	ID string `json:"videoId"`
 
 	Thumbnail         Thumbnail         `json:"thumbnail"`
@@ -14,6 +40,17 @@ type VideoData struct {
 	NavigationEndpoint NavigationEndpoint `json:"navigationEndpoint"`
 }
 
+type ViewCount struct {
+	VideoViewCountRenderer struct {
+		ViewCount struct {
+			SimpleText string `json:"simpleText"`
+		} `json:"viewCount"`
+		ShortViewCount struct {
+			SimpleText string `json:"simpleText"`
+		} `json:"shortViewCount"`
+	} `json:"videoViewCountRenderer"`
+}
+
 // Thumbnail represents thumbnail information for a video. Contains an array of thumbnail URLs with dimensions.
 type Thumbnails struct {
 	URL    string `json:"url"`
@@ -23,6 +60,41 @@ type Thumbnails struct {
 
 type Thumbnail struct {
 	Thumbnails []Thumbnails `json:"thumbnails"`
+}
+
+type Owner struct {
+	VideoOwnerRenderer struct {
+		Title struct {
+			Runs [1]struct {
+				Text string `json:"text"`
+			} `json:"runs"`
+		} `json:"title"`
+		SubscriberCountText struct {
+			SimpleText string `json:"simpleText"`
+		} `json:"subscriberCountText"`
+	} `json:"videoOwnerRenderer"`
+}
+
+type VideoActions struct {
+	MenuRenderer struct {
+		TopLevelButtons []struct {
+			SegmentedLikeDislikeButtonViewModel struct {
+				LikeButtonViewModel struct {
+					LikeButtonViewModel struct {
+						ToggleButtonViewModel struct {
+							ToggleButtonViewModel struct {
+								DefaultButtonViewModel struct {
+									ButtonViewModel struct {
+										Title string
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
 }
 
 // Title represents the title of a video, including accessibility information.
@@ -39,15 +111,9 @@ type Title struct {
 
 // LongBylineText represents the long channel name or description, including navigation details.
 type LongBylineText struct {
-	Runes []struct {
+	Runs []struct {
 		Text string `json:"text"`
 	} `json:"runs"`
-
-	NavigationEndpoint struct {
-		ClickTrackingParams string `json:"clickTrackingParams"`
-
-		// commandMetadata, browseEndpoint
-	} `json:"navigationEndpoint"`
 }
 
 // PublishedTimeText represents the simple text for the video's publish date.
@@ -79,47 +145,134 @@ type NavigationEndpoint struct {
 	} `json:"commandMetadata"`
 }
 
-// GetTitle extracts the video title.
+// title := vd.VideoPrimaryInfoRenderer.VideoActions.MenuRenderer.TopLevelButtons
+// if len(title) > 0 {
+// 	return title[0].SegmentedLikeDislikeButtonViewModel.LikeButtonViewModel.LikeButtonViewModel.ToggleButtonViewModel.ToggleButtonViewModel.DefaultButtonViewModel.ButtonViewModel.Title
+// }
+
 func (vd *VideoData) GetTitle() string {
-	return vd.Title.Runs[0].Text
+	if title := vd.VideoPrimaryInfoRenderer.Title.Runs; len(title) > 0 {
+		return title[0].Text
+	}
+
+	return vd.CompactVideoRenderer.GetTitle()
 }
 
-// GetChannel extracts the channel name.
+// GetTitle returns the title of the video.
+func (cr *CompactVideoRenderer) GetTitle() string {
+	if len(cr.Title.Runs) > 0 {
+		return cr.Title.Runs[0].Text
+	}
+	return ""
+}
+
+// GetChannel returns the name of the channel.
 func (vd *VideoData) GetChannel() string {
-	return vd.LongBylineText.Runes[0].Text
+	if channel := vd.VideoSecondaryInfoRenderer.Owner.VideoOwnerRenderer.Title.Runs; len(channel) > 0 {
+		return channel[0].Text
+	}
+
+	return ""
+}
+
+func (cr *CompactVideoRenderer) GetChannel() string {
+	if len(cr.LongBylineText.Runs) > 0 {
+		return cr.LongBylineText.Runs[0].Text
+	}
+	return ""
 }
 
 // GetViews extracts the video view count.
 func (vd *VideoData) GetViews() string {
-	return vd.ViewCountText.SimpleText
+	return vd.VideoPrimaryInfoRenderer.ViewCount.VideoViewCountRenderer.ViewCount.SimpleText
+}
+
+func (vd *VideoData) GetShortView() string {
+	return vd.VideoPrimaryInfoRenderer.ViewCount.VideoViewCountRenderer.ShortViewCount.SimpleText
+}
+
+func (cr *CompactVideoRenderer) GetViews() string {
+	return cr.ViewCountText.SimpleText
 }
 
 // GetDuration extracts the video duration.
 func (vd *VideoData) GetDuration() string {
-	return vd.LengthText.SimpleText
+	return vd.CompactVideoRenderer.LengthText.SimpleText
+}
+
+func (cr *CompactVideoRenderer) GetDuration() string {
+	return cr.LengthText.SimpleText
 }
 
 // GetPublishTime extracts the video publish time.
 func (vd *VideoData) GetPublishTime() string {
-	return vd.PublishedTimeText.SimpleText
+	return vd.VideoPrimaryInfoRenderer.DateText.SimpleText
+}
+
+func (vd *VideoData) GetRelativeDate() string {
+	return vd.VideoPrimaryInfoRenderer.RelativeDateText.SimpleText
+}
+
+func (cr *CompactVideoRenderer) GetPublishTime() string {
+	return cr.PublishedTimeText.SimpleText
 }
 
 // GetUrlSuffix extracts the video URL suffix.
 func (vd *VideoData) GetUrlSuffix() string {
-	return vd.NavigationEndpoint.CommandMetadata.WebCommandMetadata.Url
+	return vd.CompactVideoRenderer.NavigationEndpoint.CommandMetadata.WebCommandMetadata.Url
 }
 
-// Url constructs and returns the complete URL for the video using the base URL and the video URL suffix.
+func (cr *CompactVideoRenderer) GetUrlSuffix() string {
+	return cr.NavigationEndpoint.CommandMetadata.WebCommandMetadata.Url
+}
+
+// GetUrl constructs the full URL for the video.
 func (vd *VideoData) GetUrl() string {
-	return baseURL + vd.NavigationEndpoint.CommandMetadata.WebCommandMetadata.Url
+	return baseURL + vd.CompactVideoRenderer.NavigationEndpoint.CommandMetadata.WebCommandMetadata.Url
+}
+
+func (cr *CompactVideoRenderer) GetUrl() string {
+	return baseURL + cr.NavigationEndpoint.CommandMetadata.WebCommandMetadata.Url
 }
 
 // GetThumbnail retrieves the first thumbnail URL from the list of thumbnails associated with the video.
-func (vd *VideoData) GetThumbnailUrl() string {
-	return vd.Thumbnail.Thumbnails[0].URL
+func (vd *VideoData) GetUrlThumbnail() string {
+	if thumbnail := vd.CompactVideoRenderer.Thumbnail.Thumbnails; len(thumbnail) > 0 {
+		return thumbnail[0].URL
+	}
+
+	return ""
+}
+
+func (cr *CompactVideoRenderer) GetUrlThumbnail() string {
+	if thumbnail := cr.Thumbnail.Thumbnails; len(thumbnail) > 0 {
+		return thumbnail[0].URL
+	}
+
+	return ""
 }
 
 // GetThumbnails retrieves the list of all thumbnail information for the video.
-func (vd *VideoData) GetThumbnails() []Thumbnails {
-	return vd.Thumbnail.Thumbnails
+func (cr *CompactVideoRenderer) GetThumbnails() []Thumbnails {
+	return cr.Thumbnail.Thumbnails
+}
+
+func (vd *VideoData) GetDescription() string {
+	return vd.VideoSecondaryInfoRenderer.AttributedDescription.Content
+}
+
+func (vd *VideoData) GetLikeCount() string {
+	if TopLevelButtons := vd.VideoPrimaryInfoRenderer.VideoActions.MenuRenderer.TopLevelButtons; len(TopLevelButtons) > 0 {
+		return TopLevelButtons[0].SegmentedLikeDislikeButtonViewModel.LikeButtonViewModel.LikeButtonViewModel.ToggleButtonViewModel.ToggleButtonViewModel.DefaultButtonViewModel.ButtonViewModel.Title
+	}
+
+	return ""
+}
+
+func (vd *VideoData) GetSubscriberCount() string {
+	return vd.VideoSecondaryInfoRenderer.Owner.VideoOwnerRenderer.SubscriberCountText.SimpleText
+}
+
+func (vd *VideoData) ID() string {
+	return vd.CompactVideoRenderer.ID
 }
