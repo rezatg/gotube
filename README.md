@@ -2,9 +2,10 @@
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/rezatg/gotube#section-readme.svg)](https://pkg.go.dev/github.com/rezatg/gotube)
 [![Go Version](https://img.shields.io/github/go-mod/go-version/rezatg/gotube?logo=go)](go.mod)
+[![Sourcegraph](https://sourcegraph.com/github.com/rezatg/gotube/-/badge.svg)](https://sourcegraph.com/github.com/rezatg/gotube?badge)
 [![Discussions](https://img.shields.io/github/discussions/rezatg/gotube?color=58a6ff&label=Discussions&logo=github)](https://github.com/rezatg/gotube/discussions)
-[![codecov](https://codecov.io/gh/rezatg/gotube/branch/main/graph/badge.svg?token=57B1OR6PCK)](https://codecov.io/gh/rezatg/gotube)
-[![Test](https://github.com/rezatg/gotube/actions/workflows/test.yml/badge.svg)](https://github.com/rezatg/gotube/actions/workflows/test.yml)
+[![TODOs](https://badgen.net/https/api.tickgit.com/badgen/github.com/rezatg/gotube)](https://www.tickgit.com/browse?repo=github.com/rezatg/gotube)
+
 
 `gotube` is a Go library for performing YouTube searches and extracting video data seamlessly. This library provides a simple interface to search for videos on YouTube, retrieve associated data, and facilitate further processing.
 
